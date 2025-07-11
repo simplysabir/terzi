@@ -9,6 +9,7 @@ mod output;
 mod request;
 mod storage;
 mod utils;
+mod cli;
 
 use utils::*;
 use client::TerziClient;
