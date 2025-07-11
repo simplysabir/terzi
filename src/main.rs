@@ -2,7 +2,6 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::collections::HashMap;
 
-mod cli;
 mod client;
 mod config;
 mod interactive;
@@ -11,7 +10,7 @@ mod request;
 mod storage;
 mod utils;
 
-use cli::*;
+use utils::*;
 use client::TerziClient;
 use config::Config;
 use interactive::InteractiveMode;
