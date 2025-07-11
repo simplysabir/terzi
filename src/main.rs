@@ -33,7 +33,7 @@ struct Cli {
     command: Option<Commands>,
 
     /// URL to make request to (for quick requests)
-    #[arg(value_name = "URL", conflicts_with = "command")]
+    #[arg(value_name = "URL")]
     url: Option<String>,
 
     /// HTTP method (GET, POST, PUT, DELETE, etc.)
@@ -177,7 +177,7 @@ async fn main() -> Result<()> {
     
     // Initialize configuration and storage
     let config = Config::load().await?;
-    let storage = Storage::new().await?;
+    let mut storage = Storage::new().await?;
     let client = TerziClient::new(&config)?;
     let formatter = ResponseFormatter::new(&config);
 
@@ -195,15 +195,15 @@ async fn main() -> Result<()> {
         Some(Commands::Show { name }) => {
             match storage.get_request(&name).await? {
                 Some(request) => print_request_details(&request),
-                None => eprintln!("❌ Request '{}' not found", name),
+                None => cli::print_error(&format!("Request '{}' not found", name)),
             }
         }
         
         Some(Commands::Delete { name }) => {
             if storage.delete_request(&name).await? {
-                println!("✅ Request '{}' deleted", name);
+                cli::print_success(&format!("Request '{}' deleted", name));
             } else {
-                eprintln!("❌ Request '{}' not found", name);
+                cli::print_error(&format!("Request '{}' not found", name));
             }
         }
         
@@ -213,7 +213,7 @@ async fn main() -> Result<()> {
                     let mut interactive = InteractiveMode::new(client, storage, formatter);
                     interactive.edit_request(&mut request).await?;
                 }
-                None => eprintln!("❌ Request '{}' not found", name),
+                None => cli::print_error(&format!("Request '{}' not found", name)),
             }
         }
         
@@ -232,13 +232,13 @@ async fn main() -> Result<()> {
         
         None => {
             // Direct request mode
-            if let Some(url) = cli.url {
-                let mut request = build_request_from_cli(&cli, &url)?;
+            if let Some(ref url) = cli.url {
+                let mut request = build_request_from_cli(&cli, url)?;
                 
                 if let Some(ref name) = cli.save {
                     request.name = name.clone();
                     storage.save_request(name, &request).await?;
-                    println!("💾 Request saved as '{}'", name);
+                    cli::print_success(&format!("Request saved as '{}'", name));
                 }
                 
                 match client.execute_request(&request).await {
@@ -253,7 +253,7 @@ async fn main() -> Result<()> {
                     }
                     Err(e) => {
                         storage.add_error_to_history(&request, &e.to_string()).await?;
-                        eprintln!("❌ Request failed: {}", e);
+                        cli::print_error(&format!("Request failed: {}", e));
                         std::process::exit(1);
                     }
                 }
@@ -270,19 +270,21 @@ async fn main() -> Result<()> {
                             }
                             Err(e) => {
                                 storage.add_error_to_history(&request, &e.to_string()).await?;
-                                eprintln!("❌ Request failed: {}", e);
+                                cli::print_error(&format!("Request failed: {}", e));
                                 std::process::exit(1);
                             }
                         }
                     }
                     None => {
-                        eprintln!("❌ Request '{}' not found", name);
+                        cli::print_error(&format!("Request '{}' not found", name));
                         std::process::exit(1);
                     }
                 }
             } else {
-                // No URL provided, show help or enter interactive mode
-                println!("🎯 Welcome to Terzi! Use --help for options or run 'terzi interactive' for guided mode.");
+                // No URL provided, show welcome message
+                cli::print_logo();
+                println!();
+                cli::print_welcome();
             }
         }
     }
@@ -346,7 +348,7 @@ fn build_request_from_cli(cli: &Cli, url: &str) -> Result<request::SavedRequest>
 
 fn print_request_list(requests: &[request::SavedRequest]) {
     if requests.is_empty() {
-        println!("📭 No saved requests found");
+        cli::print_info("No saved requests found. Create one with 'terzi --save <name> <url>' or 'terzi interactive'");
         return;
     }
     
@@ -389,7 +391,7 @@ fn print_request_details(request: &request::SavedRequest) {
 
 fn print_history(history: &[storage::HistoryEntry]) {
     if history.is_empty() {
-        println!("📭 No request history found");
+        cli::print_info("No request history found. Make some requests first!");
         return;
     }
     
@@ -431,13 +433,13 @@ async fn handle_config_action(action: ConfigAction, config: &Config) -> Result<(
         ConfigAction::Set { key, value } => {
             let mut config = config.clone();
             config.set_value(&key, &value).await?;
-            println!("✅ Set {} = {}", key, value);
+            cli::print_success(&format!("Set {} = {}", key, value));
         }
         ConfigAction::Get { key } => {
             if let Some(value) = config.get_value(&key).await {
-                println!("📋 {} = {}", key, value);
+                cli::print_info(&format!("{} = {}", key, value));
             } else {
-                eprintln!("❌ Configuration key '{}' not found", key);
+                cli::print_error(&format!("Configuration key '{}' not found", key));
             }
         }
         ConfigAction::List => {
@@ -451,7 +453,7 @@ async fn handle_config_action(action: ConfigAction, config: &Config) -> Result<(
         ConfigAction::Reset => {
             let mut config = config.clone();
             config.reset_to_defaults().await?;
-            println!("✅ Configuration reset to defaults");
+            cli::print_success("Configuration reset to defaults");
         }
     }
     Ok(())
@@ -475,7 +477,7 @@ async fn export_requests(storage: &Storage, output: Option<&str>, format: &str) 
             let mut file = tokio::fs::File::create(file_path).await?;
             file.write_all(output_content.as_bytes()).await?;
             file.flush().await?;
-            println!("📤 Requests exported to {}", file_path);
+            cli::print_success(&format!("Requests exported to {}", file_path));
         }
         None => {
             println!("{}", output_content);

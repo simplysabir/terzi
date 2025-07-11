@@ -63,6 +63,7 @@ impl SavedRequest {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct RequestBuilder {
     request: SavedRequest,
 }

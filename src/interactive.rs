@@ -1,5 +1,5 @@
 use anyhow::Result;
-// use clap::Parser;
+use clap::Parser;
 use colored::*;
 use dialoguer::{
     theme::ColorfulTheme, Confirm, FuzzySelect, Input, MultiSelect, Select,
@@ -109,7 +109,7 @@ impl InteractiveMode {
             .default(false)
             .interact()?
         {
-            self.add_headers(&mut builder).await?;
+            builder = self.add_headers(builder).await?;
         }
 
         // Add authentication
@@ -118,7 +118,7 @@ impl InteractiveMode {
             .default(false)
             .interact()?
         {
-            self.add_authentication(&mut builder).await?;
+            builder = self.add_authentication(builder).await?;
         }
 
         // Add body for non-GET requests
@@ -128,7 +128,7 @@ impl InteractiveMode {
                 .default(false)
                 .interact()?
             {
-                self.add_body(&mut builder).await?;
+                builder = self.add_body(builder).await?;
             }
         }
 
@@ -175,7 +175,7 @@ impl InteractiveMode {
         Ok(())
     }
 
-    async fn add_headers(&mut self, builder: &mut RequestBuilder) -> Result<()> {
+    async fn add_headers(&mut self, mut builder: RequestBuilder) -> Result<RequestBuilder> {
         loop {
             let header_name: String = Input::with_theme(&ColorfulTheme::default())
                 .with_prompt("Header name (or press Enter to finish)")
@@ -190,7 +190,7 @@ impl InteractiveMode {
                 .with_prompt(&format!("Value for '{}'", header_name))
                 .interact_text()?;
 
-            builder.header(&header_name, &header_value);
+            builder = builder.header(&header_name, &header_value);
 
             if !Confirm::with_theme(&ColorfulTheme::default())
                 .with_prompt("Add another header?")
@@ -201,10 +201,10 @@ impl InteractiveMode {
             }
         }
 
-        Ok(())
+        Ok(builder)
     }
 
-    async fn add_authentication(&mut self, builder: &mut RequestBuilder) -> Result<()> {
+    async fn add_authentication(&mut self, mut builder: RequestBuilder) -> Result<RequestBuilder> {
         let auth_types = vec![
             "Bearer Token",
             "Basic Auth",
@@ -223,7 +223,7 @@ impl InteractiveMode {
                 let token: String = Input::with_theme(&ColorfulTheme::default())
                     .with_prompt("Enter bearer token")
                     .interact_text()?;
-                builder.auth(&format!("bearer:{}", token))?;
+                builder = builder.auth(&format!("bearer:{}", token))?;
             }
             1 => {
                 // Basic Auth
@@ -233,7 +233,7 @@ impl InteractiveMode {
                 let password: String = dialoguer::Password::with_theme(&ColorfulTheme::default())
                     .with_prompt("Password")
                     .interact()?;
-                builder.auth(&format!("basic:{}:{}", username, password))?;
+                builder = builder.auth(&format!("basic:{}:{}", username, password))?;
             }
             2 => {
                 // API Key Header
@@ -244,7 +244,7 @@ impl InteractiveMode {
                 let key_value: String = Input::with_theme(&ColorfulTheme::default())
                     .with_prompt("API key value")
                     .interact_text()?;
-                builder.header(&key_name, &key_value);
+                builder = builder.header(&key_name, &key_value);
             }
             3 => {
                 // API Key Query
@@ -261,10 +261,10 @@ impl InteractiveMode {
             _ => unreachable!(),
         }
 
-        Ok(())
+        Ok(builder)
     }
 
-    async fn add_body(&mut self, builder: &mut RequestBuilder) -> Result<()> {
+    async fn add_body(&mut self, mut builder: RequestBuilder) -> Result<RequestBuilder> {
         let body_types = vec![
             "JSON",
             "Form Data",
@@ -289,12 +289,12 @@ impl InteractiveMode {
                 // Validate JSON
                 match serde_json::from_str::<serde_json::Value>(&json_body) {
                     Ok(_) => {
-                        builder.json_body(&json_body)?;
+                        builder = builder.json_body(&json_body)?;
                         self.formatter.display_success("Valid JSON added to request");
                     }
                     Err(e) => {
                         self.formatter.display_warning(&format!("Invalid JSON: {}", e));
-                        builder.raw_body(&json_body);
+                        builder = builder.raw_body(&json_body);
                     }
                 }
             }
@@ -327,14 +327,14 @@ impl InteractiveMode {
                     }
                 }
                 
-                builder.form_body(form_data)?;
+                builder = builder.form_body(form_data)?;
             }
             2 => {
                 // Raw Text
                 let raw_body: String = Input::with_theme(&ColorfulTheme::default())
                     .with_prompt("Enter raw body content")
                     .interact_text()?;
-                builder.raw_body(&raw_body);
+                builder = builder.raw_body(&raw_body);
             }
             3 => {
                 // File Upload
@@ -348,7 +348,7 @@ impl InteractiveMode {
             _ => unreachable!(),
         }
 
-        Ok(())
+        Ok(builder)
     }
 
     fn preview_request(&self, request: &SavedRequest) {

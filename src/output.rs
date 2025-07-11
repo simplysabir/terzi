@@ -56,10 +56,10 @@ impl ResponseFormatter {
 
     fn print_status_line(&self, response: &Response) {
         let status_color = match response.status {
-            200..=299 => "green",
-            300..=399 => "yellow", 
-            400..=499 => "red",
-            500..=599 => "bright_red",
+            200..=299 => "bright_green",
+            300..=399 => "bright_yellow", 
+            400..=499 => "bright_red",
+            500..=599 => "red",
             _ => "white",
         };
 
@@ -67,9 +67,9 @@ impl ResponseFormatter {
             "{} {} {} {} {}",
             response.status_emoji(),
             response.method.bright_blue().bold(),
-            response.url.bright_cyan(),
+            response.url.bright_cyan().underline(),
             response.status.to_string().color(status_color).bold(),
-            format!("({})", response.duration_human()).bright_black()
+            format!("({})", response.duration_human()).bright_black().italic()
         );
     }
 
@@ -95,10 +95,15 @@ impl ResponseFormatter {
             return;
         }
 
+        // Validate JSON first, but preserve original formatting if pretty is false
         match serde_json::from_str::<Value>(body) {
-            Ok(json) => {
+            Ok(_) => {
                 let formatted = if pretty {
-                    serde_json::to_string_pretty(&json).unwrap_or_else(|_| body.to_string())
+                    // Use a custom pretty formatter that preserves order
+                    match self.pretty_format_json(body) {
+                        Ok(formatted) => formatted,
+                        Err(_) => body.to_string(),
+                    }
                 } else {
                     body.to_string()
                 };
@@ -109,6 +114,69 @@ impl ResponseFormatter {
                 self.print_raw_body(body);
             }
         }
+    }
+
+    fn pretty_format_json(&self, json_str: &str) -> Result<String> {
+        // Simple pretty formatting that preserves field order
+        let mut formatted = String::new();
+        let mut indent_level = 0;
+        let mut in_string = false;
+        let mut escape_next = false;
+        let chars: Vec<char> = json_str.chars().collect();
+        
+        for (i, &ch) in chars.iter().enumerate() {
+            if escape_next {
+                formatted.push(ch);
+                escape_next = false;
+                continue;
+            }
+            
+            match ch {
+                '"' if !escape_next => {
+                    in_string = !in_string;
+                    formatted.push(ch);
+                }
+                '\\' if in_string => {
+                    escape_next = true;
+                    formatted.push(ch);
+                }
+                '{' | '[' if !in_string => {
+                    formatted.push(ch);
+                    indent_level += 1;
+                    if i + 1 < chars.len() && chars[i + 1] != '}' && chars[i + 1] != ']' {
+                        formatted.push('\n');
+                        formatted.push_str(&"  ".repeat(indent_level));
+                    }
+                }
+                '}' | ']' if !in_string => {
+                    if chars.get(i.saturating_sub(1)) != Some(&'{') && chars.get(i.saturating_sub(1)) != Some(&'[') {
+                        formatted.push('\n');
+                        indent_level = indent_level.saturating_sub(1);
+                        formatted.push_str(&"  ".repeat(indent_level));
+                    } else {
+                        indent_level = indent_level.saturating_sub(1);
+                    }
+                    formatted.push(ch);
+                }
+                ',' if !in_string => {
+                    formatted.push(ch);
+                    formatted.push('\n');
+                    formatted.push_str(&"  ".repeat(indent_level));
+                }
+                ':' if !in_string => {
+                    formatted.push(ch);
+                    formatted.push(' ');
+                }
+                _ if ch.is_whitespace() && !in_string => {
+                    // Skip existing whitespace outside strings
+                }
+                _ => {
+                    formatted.push(ch);
+                }
+            }
+        }
+        
+        Ok(formatted)
     }
 
     fn print_yaml_body(&self, body: &str) {
