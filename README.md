@@ -11,7 +11,7 @@
 
 # 🚀 Terzi
 
-### `Modern CLI API client designed for developer productivity`
+### Modern CLI API client designed for developer productivity
 
 **Build, test, and manage your API requests with ease.**
 
@@ -447,9 +447,8 @@ cargo run -- https://api.example.com  # Test API request
 Comprehensive documentation is available:
 
 - **[Examples](examples/)** - Real-world usage examples
-- **[API Reference](docs/api.md)** - Complete API documentation
+- **[API Reference](docs/cli-reference.md)** - Complete API documentation
 - **[Configuration Guide](docs/configuration.md)** - Configuration options
-- **[Advanced Usage](docs/advanced.md)** - Advanced features
 - **[Troubleshooting](docs/troubleshooting.md)** - Common issues
 
 ---
@@ -477,29 +476,6 @@ cargo check                            # Check compilation
 
 ---
 
-## 📄 **License**
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 📞 **Support**
-
-- 🐛 **Issues:** [GitHub Issues](https://github.com/simplysabir/terzi/issues)
-- 💬 **Discussions:** [GitHub Discussions](https://github.com/simplysabir/terzi/discussions)
-- 📧 **Email:** simplysabir@gmail.com
-
----
-
-<div align="center">
-
-**A modern CLI API client built for developer productivity.**
-
-🚀 **Fast & Reliable** • 🛠️ **Developer-Friendly** • ✨ **Open Source**
-
-Made with ❤️ in Rust
-
-</div>
 
 ## Docker Usage
 
@@ -563,3 +539,21 @@ docker compose run -v $(pwd)/data:/root/.config/terzi terzi-api-client
 # Using Docker directly
 docker run -it -v $(pwd)/data:/root/.config/terzi terzi
 ```
+
+## 📄 **License**
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 📞 **Support**
+
+- 🐛 **Issues:** [GitHub Issues](https://github.com/simplysabir/terzi/issues)
+- 💬 **Discussions:** [GitHub Discussions](https://github.com/simplysabir/terzi/discussions)
+- 📧 **Email:** simplysabir@gmail.com
+
+---
+
+Made with ❤️ in Rust
+
+</div>

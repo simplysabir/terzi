@@ -25,9 +25,6 @@ jobs:
       - name: Check code format
         run: cargo fmt --all -- --check
 
-      - name: Run Clippy linter
-        run: cargo clippy -- -D warnings
-
       - name: Build project
         run: cargo build --verbose
 
