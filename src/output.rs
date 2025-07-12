@@ -7,11 +7,11 @@ use std::collections::HashMap;
 use syntect::easy::HighlightLines;
 use syntect::highlighting::{Style, ThemeSet};
 use syntect::parsing::SyntaxSet;
-use syntect::util::{as_24_bit_terminal_escaped, LinesWithEndings};
+use syntect::util::{LinesWithEndings, as_24_bit_terminal_escaped};
 
+use crate::Cli;
 use crate::client::Response;
 use crate::config::Config;
-use crate::Cli;
 
 pub struct ResponseFormatter {
     syntax_set: SyntaxSet,
@@ -31,12 +31,12 @@ impl ResponseFormatter {
     pub async fn display_response(&self, response: &Response, cli: &Cli) -> Result<()> {
         // Print status line
         self.print_status_line(response);
-        
+
         // Print headers if requested
         if cli.include_headers {
             self.print_headers(&response.headers);
         }
-        
+
         // Print body based on format
         match cli.output.as_str() {
             "json" => self.print_json_body(&response.body, cli.pretty),
@@ -45,19 +45,19 @@ impl ResponseFormatter {
             "raw" => self.print_raw_body(&response.body),
             _ => self.print_auto_body(response, cli.pretty),
         }
-        
+
         // Print footer with timing info
         if cli.verbose {
             self.print_footer(response);
         }
-        
+
         Ok(())
     }
 
     fn print_status_line(&self, response: &Response) {
         let status_color = match response.status {
             200..=299 => "bright_green",
-            300..=399 => "bright_yellow", 
+            300..=399 => "bright_yellow",
             400..=499 => "bright_red",
             500..=599 => "red",
             _ => "white",
@@ -69,7 +69,9 @@ impl ResponseFormatter {
             response.method.bright_blue().bold(),
             response.url.bright_cyan().underline(),
             response.status.to_string().color(status_color).bold(),
-            format!("({})", response.duration_human()).bright_black().italic()
+            format!("({})", response.duration_human())
+                .bright_black()
+                .italic()
         );
     }
 
@@ -79,11 +81,11 @@ impl ResponseFormatter {
             let mut table = Table::new();
             table.load_preset(UTF8_FULL_CONDENSED);
             table.set_header(vec!["Name", "Value"]);
-            
+
             for (key, value) in headers {
                 table.add_row(vec![key.bright_blue().to_string(), value.to_string()]);
             }
-            
+
             println!("{}", table);
             println!();
         }
@@ -95,24 +97,25 @@ impl ResponseFormatter {
             return;
         }
 
-        // Validate JSON first, but preserve original formatting if pretty is false
-        match serde_json::from_str::<Value>(body) {
-            Ok(_) => {
-                let formatted = if pretty {
-                    // Use a custom pretty formatter that preserves order
-                    match self.pretty_format_json(body) {
-                        Ok(formatted) => formatted,
-                        Err(_) => body.to_string(),
-                    }
-                } else {
-                    body.to_string()
-                };
-                self.highlight_and_print(&formatted, "json");
-            }
-            Err(_) => {
-                println!("{}", "Invalid JSON response:".bright_red());
-                self.print_raw_body(body);
-            }
+        // Validate JSON first, then format appropriately
+        if crate::utils::is_valid_json(body) {
+            let formatted = if pretty {
+                // Use utils prettify_json for better formatting
+                match crate::utils::prettify_json(body) {
+                    Ok(formatted) => formatted,
+                    Err(_) => body.to_string(),
+                }
+            } else {
+                // Use minified JSON for compact display
+                match crate::utils::minify_json(body) {
+                    Ok(minified) => minified,
+                    Err(_) => body.to_string(),
+                }
+            };
+            self.highlight_and_print(&formatted, "json");
+        } else {
+            println!("{}", "Invalid JSON response:".bright_red());
+            self.print_raw_body(body);
         }
     }
 
@@ -123,14 +126,14 @@ impl ResponseFormatter {
         let mut in_string = false;
         let mut escape_next = false;
         let chars: Vec<char> = json_str.chars().collect();
-        
+
         for (i, &ch) in chars.iter().enumerate() {
             if escape_next {
                 formatted.push(ch);
                 escape_next = false;
                 continue;
             }
-            
+
             match ch {
                 '"' if !escape_next => {
                     in_string = !in_string;
@@ -149,7 +152,9 @@ impl ResponseFormatter {
                     }
                 }
                 '}' | ']' if !in_string => {
-                    if chars.get(i.saturating_sub(1)) != Some(&'{') && chars.get(i.saturating_sub(1)) != Some(&'[') {
+                    if chars.get(i.saturating_sub(1)) != Some(&'{')
+                        && chars.get(i.saturating_sub(1)) != Some(&'[')
+                    {
                         formatted.push('\n');
                         indent_level = indent_level.saturating_sub(1);
                         formatted.push_str(&"  ".repeat(indent_level));
@@ -175,7 +180,7 @@ impl ResponseFormatter {
                 }
             }
         }
-        
+
         Ok(formatted)
     }
 
@@ -187,12 +192,10 @@ impl ResponseFormatter {
 
         // Try to parse as JSON first, then convert to YAML
         match serde_json::from_str::<Value>(body) {
-            Ok(json) => {
-                match serde_yaml::to_string(&json) {
-                    Ok(yaml) => self.highlight_and_print(&yaml, "yaml"),
-                    Err(_) => self.print_raw_body(body),
-                }
-            }
+            Ok(json) => match serde_yaml::to_string(&json) {
+                Ok(yaml) => self.highlight_and_print(&yaml, "yaml"),
+                Err(_) => self.print_raw_body(body),
+            },
             Err(_) => {
                 // Assume it's already YAML
                 self.highlight_and_print(body, "yaml");
@@ -238,7 +241,10 @@ impl ResponseFormatter {
 
                     println!("{}", table);
                 } else {
-                    println!("{}", "Cannot create table from non-object array".bright_red());
+                    println!(
+                        "{}",
+                        "Cannot create table from non-object array".bright_red()
+                    );
                     self.print_json_body(body, true);
                 }
             }
@@ -257,7 +263,10 @@ impl ResponseFormatter {
                 println!("{}", table);
             }
             _ => {
-                println!("{}", "Cannot create table from this response type".bright_red());
+                println!(
+                    "{}",
+                    "Cannot create table from this response type".bright_red()
+                );
                 self.print_json_body(body, true);
             }
         }
@@ -284,14 +293,17 @@ impl ResponseFormatter {
     }
 
     fn highlight_and_print(&self, content: &str, syntax: &str) {
-        let syntax_ref = self.syntax_set.find_syntax_by_extension(syntax)
+        let syntax_ref = self
+            .syntax_set
+            .find_syntax_by_extension(syntax)
             .unwrap_or_else(|| self.syntax_set.find_syntax_plain_text());
-        
+
         let theme = &self.theme_set.themes["base16-ocean.dark"];
         let mut highlighter = HighlightLines::new(syntax_ref, theme);
-        
+
         for line in LinesWithEndings::from(content) {
-            let ranges: Vec<(Style, &str)> = highlighter.highlight_line(line, &self.syntax_set).unwrap();
+            let ranges: Vec<(Style, &str)> =
+                highlighter.highlight_line(line, &self.syntax_set).unwrap();
             let escaped = as_24_bit_terminal_escaped(&ranges[..], false);
             print!("{}", escaped);
         }
@@ -312,27 +324,27 @@ impl ResponseFormatter {
     fn print_footer(&self, response: &Response) {
         println!();
         println!("{}", "Response Info:".bright_yellow().bold());
-        
+
         let mut info_table = Table::new();
         info_table.load_preset(UTF8_FULL_CONDENSED);
-        
+
         info_table.add_row(vec![
             "Duration".bright_blue().to_string(),
             response.duration_human(),
         ]);
-        
+
         info_table.add_row(vec![
             "Size".bright_blue().to_string(),
             response.size_human(),
         ]);
-        
+
         if let Some(content_type) = response.content_type() {
             info_table.add_row(vec![
                 "Content-Type".bright_blue().to_string(),
                 content_type.clone(),
             ]);
         }
-        
+
         println!("{}", info_table);
     }
 

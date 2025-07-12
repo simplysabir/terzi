@@ -5,7 +5,7 @@ use url::Url;
 // URL utilities
 pub fn normalize_url(url: &str) -> Result<String> {
     let mut parsed = Url::parse(url)?;
-    
+
     // Remove default ports
     if let Some(port) = parsed.port() {
         let default_port = match parsed.scheme() {
@@ -13,17 +13,17 @@ pub fn normalize_url(url: &str) -> Result<String> {
             "https" => Some(443),
             _ => None,
         };
-        
+
         if Some(port) == default_port {
             let _ = parsed.set_port(None);
         }
     }
-    
+
     // Remove trailing slash for paths
     if parsed.path() == "/" {
         parsed.set_path("");
     }
-    
+
     Ok(parsed.to_string())
 }
 
@@ -39,7 +39,7 @@ pub fn is_valid_url(url: &str) -> bool {
 // Time utilities
 pub fn format_duration(duration: Duration) -> String {
     let total_ms = duration.as_millis();
-    
+
     if total_ms < 1000 {
         format!("{}ms", total_ms)
     } else if total_ms < 60_000 {
@@ -60,7 +60,7 @@ pub fn time_ago(timestamp: SystemTime) -> String {
     let now = SystemTime::now();
     if let Ok(duration) = now.duration_since(timestamp) {
         let seconds = duration.as_secs();
-        
+
         if seconds < 60 {
             format!("{}s ago", seconds)
         } else if seconds < 3600 {
@@ -126,10 +126,12 @@ pub fn is_valid_json(json: &str) -> bool {
 }
 
 // HTTP utilities
-pub fn parse_content_type(content_type: &str) -> (String, std::collections::HashMap<String, String>) {
+pub fn parse_content_type(
+    content_type: &str,
+) -> (String, std::collections::HashMap<String, String>) {
     let mut parts = content_type.split(';');
     let media_type = parts.next().unwrap_or("").trim().to_lowercase();
-    
+
     let mut parameters = std::collections::HashMap::new();
     for part in parts {
         if let Some((key, value)) = part.split_once('=') {
@@ -138,27 +140,27 @@ pub fn parse_content_type(content_type: &str) -> (String, std::collections::Hash
             parameters.insert(key, value.to_string());
         }
     }
-    
+
     (media_type, parameters)
 }
 
 pub fn guess_content_type(body: &str) -> &'static str {
     let trimmed = body.trim();
-    
+
     if trimmed.starts_with('{') || trimmed.starts_with('[') {
         if is_valid_json(trimmed) {
             return "application/json";
         }
     }
-    
+
     if trimmed.starts_with('<') {
         return "application/xml";
     }
-    
+
     if trimmed.contains('=') && !trimmed.contains('\n') {
         return "application/x-www-form-urlencoded";
     }
-    
+
     "text/plain"
 }
 
@@ -180,7 +182,7 @@ pub fn get_env_or_default(key: &str, default: &str) -> String {
 
 pub fn expand_env_vars(text: &str) -> String {
     let mut result = text.to_string();
-    
+
     // Simple environment variable expansion for ${VAR} format
     while let Some(start) = result.find("${") {
         if let Some(end) = result[start..].find('}') {
@@ -191,7 +193,7 @@ pub fn expand_env_vars(text: &str) -> String {
             break;
         }
     }
-    
+
     result
 }
 
@@ -214,7 +216,10 @@ pub fn is_valid_email(email: &str) -> bool {
 }
 
 pub fn is_valid_header_name(name: &str) -> bool {
-    !name.is_empty() && name.chars().all(|c| c.is_ascii() && c != ':' && c != '\n' && c != '\r')
+    !name.is_empty()
+        && name
+            .chars()
+            .all(|c| c.is_ascii() && c != ':' && c != '\n' && c != '\r')
 }
 
 pub fn is_valid_header_value(value: &str) -> bool {
@@ -224,22 +229,26 @@ pub fn is_valid_header_value(value: &str) -> bool {
 // Security utilities
 pub fn mask_sensitive_data(text: &str, patterns: &[&str]) -> String {
     let mut result = text.to_string();
-    
+
     for pattern in patterns {
         if let Ok(regex) = regex::Regex::new(pattern) {
-            result = regex.replace_all(&result, |caps: &regex::Captures| {
-                let full_match = caps.get(0).unwrap().as_str();
-                if full_match.len() <= 4 {
-                    "*".repeat(full_match.len())
-                } else {
-                    format!("{}****{}", 
-                        &full_match[..2], 
-                        &full_match[full_match.len()-2..])
-                }
-            }).to_string();
+            result = regex
+                .replace_all(&result, |caps: &regex::Captures| {
+                    let full_match = caps.get(0).unwrap().as_str();
+                    if full_match.len() <= 4 {
+                        "*".repeat(full_match.len())
+                    } else {
+                        format!(
+                            "{}****{}",
+                            &full_match[..2],
+                            &full_match[full_match.len() - 2..]
+                        )
+                    }
+                })
+                .to_string();
         }
     }
-    
+
     result
 }
 
@@ -250,7 +259,7 @@ pub fn generate_request_id() -> String {
 // Collection utilities
 pub fn merge_headers(
     base: &std::collections::HashMap<String, String>,
-    override_headers: &std::collections::HashMap<String, String>
+    override_headers: &std::collections::HashMap<String, String>,
 ) -> std::collections::HashMap<String, String> {
     let mut result = base.clone();
     result.extend(override_headers.clone());
@@ -259,14 +268,15 @@ pub fn merge_headers(
 
 pub fn filter_headers(
     headers: &std::collections::HashMap<String, String>,
-    exclude_patterns: &[&str]
+    exclude_patterns: &[&str],
 ) -> std::collections::HashMap<String, String> {
-    headers.iter()
+    headers
+        .iter()
         .filter(|(key, _)| {
             let key_lower = key.to_lowercase();
-            !exclude_patterns.iter().any(|pattern| {
-                key_lower.contains(&pattern.to_lowercase())
-            })
+            !exclude_patterns
+                .iter()
+                .any(|pattern| key_lower.contains(&pattern.to_lowercase()))
         })
         .map(|(k, v)| (k.clone(), v.clone()))
         .collect()
@@ -276,7 +286,7 @@ pub fn filter_headers(
 pub fn extract_template_variables(text: &str) -> Vec<String> {
     let mut variables = Vec::new();
     let mut start = 0;
-    
+
     while let Some(pos) = text[start..].find("{{") {
         let abs_start = start + pos;
         if let Some(end_pos) = text[abs_start..].find("}}") {
@@ -289,7 +299,7 @@ pub fn extract_template_variables(text: &str) -> Vec<String> {
             break;
         }
     }
-    
+
     variables.sort();
     variables.dedup();
     variables
@@ -298,15 +308,15 @@ pub fn extract_template_variables(text: &str) -> Vec<String> {
 // Error formatting
 pub fn format_error_chain(error: &anyhow::Error) -> String {
     let mut messages = Vec::new();
-    
+
     messages.push(error.to_string());
     let mut source = error.source();
-    
+
     while let Some(err) = source {
         messages.push(err.to_string());
         source = err.source();
     }
-    
+
     messages.join(" → ")
 }
 
@@ -321,15 +331,15 @@ impl Timer {
             start: std::time::Instant::now(),
         }
     }
-    
+
     pub fn elapsed(&self) -> Duration {
         self.start.elapsed()
     }
-    
+
     pub fn elapsed_ms(&self) -> u128 {
         self.elapsed().as_millis()
     }
-    
+
     pub fn restart(&mut self) -> Duration {
         let elapsed = self.elapsed();
         self.start = std::time::Instant::now();
@@ -341,14 +351,16 @@ impl Timer {
 pub fn diff_json(old: &str, new: &str) -> Result<String> {
     let old_value: serde_json::Value = serde_json::from_str(old)?;
     let new_value: serde_json::Value = serde_json::from_str(new)?;
-    
+
     if old_value == new_value {
         Ok("No differences found".to_string())
     } else {
         // Simple diff - in a real implementation you'd use a proper diff library
-        Ok(format!("Values differ:\nOld: {}\nNew: {}", 
+        Ok(format!(
+            "Values differ:\nOld: {}\nNew: {}",
             serde_json::to_string_pretty(&old_value)?,
-            serde_json::to_string_pretty(&new_value)?))
+            serde_json::to_string_pretty(&new_value)?
+        ))
     }
 }
 
@@ -371,17 +383,14 @@ impl Default for RetryConfig {
     }
 }
 
-pub async fn retry_with_backoff<F, Fut, T, E>(
-    config: RetryConfig,
-    mut operation: F,
-) -> Result<T, E>
+pub async fn retry_with_backoff<F, Fut, T, E>(config: RetryConfig, mut operation: F) -> Result<T, E>
 where
     F: FnMut() -> Fut,
     Fut: std::future::Future<Output = Result<T, E>>,
     E: std::fmt::Debug,
 {
     let mut delay = config.initial_delay;
-    
+
     for attempt in 1..=config.max_attempts {
         match operation().await {
             Ok(result) => return Ok(result),
@@ -389,16 +398,18 @@ where
                 if attempt == config.max_attempts {
                     return Err(error);
                 }
-                
+
                 tokio::time::sleep(delay).await;
                 delay = std::cmp::min(
-                    Duration::from_millis((delay.as_millis() as f64 * config.backoff_multiplier) as u64),
+                    Duration::from_millis(
+                        (delay.as_millis() as f64 * config.backoff_multiplier) as u64,
+                    ),
                     config.max_delay,
                 );
             }
         }
     }
-    
+
     unreachable!()
 }
 
@@ -423,7 +434,7 @@ impl ColorScheme {
             dim: "bright_black",
         }
     }
-    
+
     pub fn light() -> Self {
         Self {
             success: "green",
@@ -441,7 +452,9 @@ pub fn create_progress_bar(len: u64) -> indicatif::ProgressBar {
     let pb = indicatif::ProgressBar::new(len);
     pb.set_style(
         indicatif::ProgressStyle::default_bar()
-            .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg}")
+            .template(
+                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg}",
+            )
             .unwrap()
             .progress_chars("█▉▊▋▌▍▎▏  "),
     );
@@ -453,10 +466,10 @@ pub fn fuzzy_match(pattern: &str, text: &str) -> Option<f64> {
     if pattern.is_empty() {
         return Some(1.0);
     }
-    
+
     let pattern = pattern.to_lowercase();
     let text = text.to_lowercase();
-    
+
     if text.contains(&pattern) {
         // Simple scoring: longer matches score higher
         Some(pattern.len() as f64 / text.len() as f64)
@@ -465,9 +478,7 @@ pub fn fuzzy_match(pattern: &str, text: &str) -> Option<f64> {
     }
 }
 
-pub fn fuzzy_sort<T>(
-    items: &mut [(f64, T)],
-) {
+pub fn fuzzy_sort<T>(items: &mut [(f64, T)]) {
     items.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
 }
 
@@ -495,7 +506,7 @@ pub fn validate_method(method: &str) -> Result<()> {
 pub mod test_utils {
     use super::*;
     use std::collections::HashMap;
-    
+
     pub fn create_test_request() -> crate::request::SavedRequest {
         crate::request::SavedRequest::new(
             "test".to_string(),
@@ -503,7 +514,7 @@ pub mod test_utils {
             "GET".to_string(),
         )
     }
-    
+
     pub fn create_test_response() -> crate::client::Response {
         crate::client::Response {
             status: 200,
@@ -520,7 +531,7 @@ pub mod test_utils {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_normalize_url() {
         assert_eq!(
@@ -532,43 +543,46 @@ mod tests {
             "http://example.com/path"
         );
     }
-    
+
     #[test]
     fn test_format_duration() {
         assert_eq!(format_duration(Duration::from_millis(500)), "500ms");
         assert_eq!(format_duration(Duration::from_secs(2)), "2.00s");
         assert_eq!(format_duration(Duration::from_secs(65)), "1m 5s");
     }
-    
+
     #[test]
     fn test_format_bytes() {
         assert_eq!(format_bytes(500), "500 B");
         assert_eq!(format_bytes(1500), "1.5 KB");
         assert_eq!(format_bytes(1_500_000), "1.4 MB");
     }
-    
+
     #[test]
     fn test_is_valid_json() {
         assert!(is_valid_json(r#"{"test": true}"#));
         assert!(is_valid_json(r#"[1, 2, 3]"#));
         assert!(!is_valid_json("not json"));
     }
-    
+
     #[test]
     fn test_guess_content_type() {
         assert_eq!(guess_content_type(r#"{"test": true}"#), "application/json");
         assert_eq!(guess_content_type("<xml></xml>"), "application/xml");
-        assert_eq!(guess_content_type("name=value"), "application/x-www-form-urlencoded");
+        assert_eq!(
+            guess_content_type("name=value"),
+            "application/x-www-form-urlencoded"
+        );
         assert_eq!(guess_content_type("plain text"), "text/plain");
     }
-    
+
     #[test]
     fn test_extract_template_variables() {
         let text = "Hello {{name}}, your {{item}} is ready!";
         let vars = extract_template_variables(text);
         assert_eq!(vars, vec!["item", "name"]);
     }
-    
+
     #[test]
     fn test_fuzzy_match() {
         assert!(fuzzy_match("test", "testing").is_some());

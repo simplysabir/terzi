@@ -1,0 +1,13 @@
+# Docker Compose configuration for Terzi CLI API Client
+# Run with: docker compose up --build
+# Or use: docker compose run terzi-api-client <command>
+
+services:
+  terzi-api-client:
+    build: .
+    container_name: terzi
+
+    # These two flags are ESSENTIAL for an interactive shell.
+    # They connect your terminal to the container's standard input/output.
+    stdin_open: true  # Keep stdin open
+    tty: true         # Allocate a pseudo-TTY 

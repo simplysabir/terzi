@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use base64::Engine;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -71,8 +71,7 @@ pub struct RequestBuilder {
 impl RequestBuilder {
     pub fn new(url: &str, method: &str) -> Result<Self> {
         // Validate URL
-        url::Url::parse(url)
-            .map_err(|_| anyhow!("Invalid URL: {}", url))?;
+        url::Url::parse(url).map_err(|_| anyhow!("Invalid URL: {}", url))?;
 
         // Validate method
         let method_upper = method.to_uppercase();
@@ -96,7 +95,9 @@ impl RequestBuilder {
     }
 
     pub fn header(mut self, key: &str, value: &str) -> Self {
-        self.request.headers.insert(key.to_string(), value.to_string());
+        self.request
+            .headers
+            .insert(key.to_string(), value.to_string());
         self
     }
 
@@ -116,21 +117,25 @@ impl RequestBuilder {
                 }
                 "basic" => {
                     if let Some((username, password)) = credentials.split_once(':') {
-                        let encoded = base64::prelude::BASE64_STANDARD.encode(format!("{}:{}", username, password));
-                        self.request.headers.insert(
-                            "Authorization".to_string(),
-                            format!("Basic {}", encoded),
-                        );
+                        let encoded = base64::prelude::BASE64_STANDARD
+                            .encode(format!("{}:{}", username, password));
+                        self.request
+                            .headers
+                            .insert("Authorization".to_string(), format!("Basic {}", encoded));
                     } else {
                         return Err(anyhow!("Basic auth requires username:password format"));
                     }
                 }
                 "api-key" | "apikey" => {
                     if let Some((header_name, key_value)) = credentials.split_once(':') {
-                        self.request.headers.insert(header_name.to_string(), key_value.to_string());
+                        self.request
+                            .headers
+                            .insert(header_name.to_string(), key_value.to_string());
                     } else {
                         // Default to X-API-Key
-                        self.request.headers.insert("X-API-Key".to_string(), credentials.to_string());
+                        self.request
+                            .headers
+                            .insert("X-API-Key".to_string(), credentials.to_string());
                     }
                 }
                 _ => {
@@ -139,10 +144,9 @@ impl RequestBuilder {
             }
         } else {
             // Assume it's a bearer token if no type specified
-            self.request.headers.insert(
-                "Authorization".to_string(),
-                format!("Bearer {}", auth),
-            );
+            self.request
+                .headers
+                .insert("Authorization".to_string(), format!("Bearer {}", auth));
         }
         Ok(self)
     }
@@ -152,10 +156,9 @@ impl RequestBuilder {
         serde_json::from_str::<serde_json::Value>(json)
             .map_err(|e| anyhow!("Invalid JSON: {}", e))?;
 
-        self.request.headers.insert(
-            "Content-Type".to_string(),
-            "application/json".to_string(),
-        );
+        self.request
+            .headers
+            .insert("Content-Type".to_string(), "application/json".to_string());
         self.request.body = Some(json.to_string());
         Ok(self)
     }
@@ -303,7 +306,11 @@ impl RequestTemplate {
         self.environments.insert(name, variables);
     }
 
-    pub fn render(&self, environment: Option<&str>, variables: HashMap<String, String>) -> Result<SavedRequest> {
+    pub fn render(
+        &self,
+        environment: Option<&str>,
+        variables: HashMap<String, String>,
+    ) -> Result<SavedRequest> {
         let mut rendered_request = self.base_request.clone();
         let mut all_variables = HashMap::new();
 
@@ -353,7 +360,7 @@ impl RequestTemplate {
 
     fn replace_variables(&self, text: &str, variables: &HashMap<String, String>) -> Result<String> {
         let mut result = text.to_string();
-        
+
         // Replace {{variable}} patterns
         for (var_name, var_value) in variables {
             let pattern = format!("{{{{{}}}}}", var_name);
@@ -375,8 +382,7 @@ impl RequestTemplate {
 // Request validation
 pub fn validate_request(request: &SavedRequest) -> Result<()> {
     // Validate URL
-    url::Url::parse(&request.url)
-        .map_err(|_| anyhow!("Invalid URL: {}", request.url))?;
+    url::Url::parse(&request.url).map_err(|_| anyhow!("Invalid URL: {}", request.url))?;
 
     // Validate method
     let valid_methods = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"];

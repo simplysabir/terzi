@@ -26,10 +26,33 @@ pub struct TerziClient {
 
 impl TerziClient {
     pub fn new(config: &Config) -> Result<Self> {
-        let client: Client = Client::builder()
-            .user_agent(format!("terzi/{}", env!("CARGO_PKG_VERSION")))
+        let mut client_builder = Client::builder()
+            .user_agent(&config.network.user_agent)
             .cookie_store(true)
-            .build()?;
+            .timeout(Duration::from_secs(config.network.read_timeout))
+            .connect_timeout(Duration::from_secs(config.network.connection_timeout))
+            .tcp_keepalive(if config.network.keep_alive {
+                Some(Duration::from_secs(60))
+            } else {
+                None
+            })
+            // Note: compression is enabled by default in reqwest
+            .redirect(reqwest::redirect::Policy::limited(
+                config.network.max_redirects as usize,
+            ));
+
+        // Set proxy if configured
+        if let Some(ref proxy_url) = config.network.proxy_url {
+            let proxy = reqwest::Proxy::all(proxy_url)?;
+            client_builder = client_builder.proxy(proxy);
+        }
+
+        // Set SSL verification
+        if !config.network.verify_ssl {
+            client_builder = client_builder.danger_accept_invalid_certs(true);
+        }
+
+        let client = client_builder.build()?;
 
         Ok(Self {
             client,
@@ -39,31 +62,35 @@ impl TerziClient {
 
     pub async fn execute_request(&self, saved_request: &SavedRequest) -> Result<Response> {
         let start_time = Instant::now();
-        
+
         // Build the request
         let method = Method::from_bytes(saved_request.method.as_bytes())?;
         let url = reqwest::Url::parse(&saved_request.url)?;
-        
+
         let mut request_builder = self.client.request(method.clone(), url.clone());
-        
+
         // Add headers
         for (key, value) in &saved_request.headers {
             request_builder = request_builder.header(key, value);
         }
-        
+
         // Add body if present
         if let Some(body) = &saved_request.body {
             request_builder = request_builder.body(body.clone());
         }
-        
-        // Set timeout
-        let request_timeout = Duration::from_secs(saved_request.timeout.unwrap_or(30));
-        
+
+        // Set timeout - use request timeout if specified, otherwise use config default
+        let request_timeout = Duration::from_secs(
+            saved_request
+                .timeout
+                .unwrap_or(self.config.general.default_timeout),
+        );
+
         // Execute request with timeout
         let response = timeout(request_timeout, request_builder.send()).await??;
-        
+
         let duration = start_time.elapsed();
-        
+
         // Extract response data
         let status = response.status();
         let headers = response
@@ -71,10 +98,10 @@ impl TerziClient {
             .iter()
             .map(|(k, v)| (k.to_string(), v.to_str().unwrap_or("").to_string()))
             .collect();
-        
+
         let body = response.text().await?;
         let size = body.len();
-        
+
         Ok(Response {
             status: status.as_u16(),
             headers,
@@ -94,7 +121,7 @@ impl TerziClient {
     pub async fn get_response_preview(&self, url: &str, limit: usize) -> Result<String> {
         let response = self.client.get(url).send().await?;
         let text = response.text().await?;
-        
+
         if text.len() > limit {
             Ok(format!("{}...", &text[..limit]))
         } else {
@@ -149,28 +176,10 @@ impl Response {
     }
 
     pub fn size_human(&self) -> String {
-        const UNITS: &[&str] = &["B", "KB", "MB", "GB"];
-        let mut size = self.size as f64;
-        let mut unit_index = 0;
-
-        while size >= 1024.0 && unit_index < UNITS.len() - 1 {
-            size /= 1024.0;
-            unit_index += 1;
-        }
-
-        if unit_index == 0 {
-            format!("{} {}", self.size, UNITS[unit_index])
-        } else {
-            format!("{:.1} {}", size, UNITS[unit_index])
-        }
+        crate::utils::format_bytes(self.size)
     }
 
     pub fn duration_human(&self) -> String {
-        let ms = self.duration.as_millis();
-        if ms < 1000 {
-            format!("{}ms", ms)
-        } else {
-            format!("{:.2}s", self.duration.as_secs_f64())
-        }
+        crate::utils::format_duration(self.duration)
     }
 }

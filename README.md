@@ -1,327 +1,565 @@
-# Terzi
-
-> A blazingly fast, deadly efficient CLI API client - eliminate API complexity
-
 <div align="center">
 
-<!-- [![Crates.io](https://img.shields.io/crates/v/terzi.svg)](https://crates.io/crates/terzi)
-[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
-[![Build Status](https://github.com/yourusername/terzi/workflows/CI/badge.svg)](https://github.com/simplysabir/terzi/actions) -->
+```
+████████╗███████╗██████╗ ███████╗██╗
+╚══██╔══╝██╔════╝██╔══██╗╚══███╔╝██║
+   ██║   █████╗  ██████╔╝  ███╔╝ ██║
+   ██║   ██╔══╝  ██╔══██╗ ███╔╝  ██║
+   ██║   ███████╗██║  ██║███████╗██║
+   ╚═╝   ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝
+```
+
+# 🚀 Terzi
+
+### `Modern CLI API client designed for developer productivity`
+
+**Build, test, and manage your API requests with ease.**
+
+---
+
+[![Rust](https://img.shields.io/badge/rust-%23000000.svg?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg?style=for-the-badge)](https://github.com/simplysabir/terzi)
 
 </div>
 
-Terzi is a deadly efficient CLI API client that eliminates complexity with precision. Perfect for developers who want the power of Postman in their terminal, with ruthless efficiency and exceptional user experience.
+---
 
-## ✨ Features
+## 🎯 **What is Terzi?**
 
-### 🚀 **Core Functionality**
-- **All HTTP Methods**: GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS
-- **Multiple Auth Types**: Bearer tokens, Basic auth, API keys, OAuth2
-- **Request Bodies**: JSON, form data, raw text, file uploads
-- **Beautiful Output**: Syntax highlighting, colored responses, formatted JSON/XML
+**Terzi** is a modern CLI API client built for developers who value simplicity, speed, and precision. Whether you're testing APIs, building integrations, or debugging endpoints, Terzi provides an intuitive command-line interface that makes HTTP requests effortless.
 
-### 🎨 **Exceptional UX**
-- **Interactive Mode**: Guided prompts for beginners
-- **Request History**: Automatic saving and replay of requests
-- **Smart Collections**: Organize and group related requests
-- **Template System**: Dynamic requests with variables and environments
-- **Fuzzy Search**: Quick finding of saved requests
+Built with Rust for maximum performance and reliability, Terzi combines the power of curl with the convenience of modern tooling to streamline your API development workflow.
 
-### ⚡ **Performance & Developer Experience**
-- **Blazingly Fast**: Built in Rust for maximum performance
-- **Auto-completion**: Intelligent suggestions and completions
-- **Export/Import**: Postman collection compatibility
-- **Response Inspection**: Headers, status codes, timing, size analysis
-- **Request Chaining**: Use response data in subsequent requests
+---
 
-### 🔧 **Advanced Features**
-- **Environment Management**: Dev, staging, prod configurations
-- **Request Validation**: Pre-flight checks and validations
-- **Response Diffing**: Compare responses across requests
-- **Backup & Restore**: Never lose your API workflows
-- **Plugin Architecture**: Extensible design for custom functionality
+## ✨ **Key Features**
 
-## 🏃‍♂️ Quick Start
+### **🚀 Core Functionality**
+- **Lightning-fast HTTP requests** with minimal overhead
+- **Interactive mode** for guided API exploration
+- **Smart request building** with built-in validation
+- **Beautiful output formatting** with syntax highlighting
+- **Request history & analytics** for tracking API usage
 
-### Installation
+### **🛠️ Developer-Friendly**
+- **Zero-config setup** - works out of the box
+- **Intuitive CLI interface** with helpful error messages
+- **Rich visual feedback** with color-coded responses
+- **Comprehensive help system** with examples
+- **Cross-platform compatibility** (Windows, macOS, Linux)
+
+### **📊 Professional Features**
+- **Save & organize** request collections
+- **Export/import** configurations
+- **Environment management** for different setups
+- **Authentication handling** (Bearer, Basic, API keys)
+- **Response analysis** with detailed metrics
+- **Sensitive data masking** for security
+- **Configurable timeouts and redirects**
+
+---
+
+## 🚀 **Quick Start**
+
+### **Installation**
 
 ```bash
-# Install from crates.io
-cargo install terzi
-
-# Or build from source
+# Build from source
 git clone https://github.com/simplysabir/terzi
 cd terzi
-cargo install --path .
+cargo build --release
+./target/release/terzi --help
 ```
 
-### Basic Usage
+### **Your First API Request**
 
 ```bash
 # Simple GET request
 terzi https://api.github.com/users/octocat
 
-# POST with JSON data
-terzi post https://httpbin.org/post -j '{"name": "terzi", "type": "cli"}'
-
-# With authentication
-terzi get https://api.github.com/user -A "bearer:your_token_here"
-
 # Interactive mode for guided experience
 terzi interactive
 
-# Save request for later use
-terzi get https://api.example.com/users --save my-users-request
+# Save a request for later
+terzi --save "github-user" https://api.github.com/users/octocat
 
-# Load and replay saved request
-terzi --load my-users-request
+# Load and execute saved request
+terzi --load "github-user"
 ```
 
-## 📚 Documentation
+---
 
-### Command Line Interface
+## 📋 **Complete Usage Guide**
+
+### **Basic Commands**
 
 ```bash
-# Basic request patterns
-terzi <method> <url> [options]
-terzi <url>  # Defaults to GET
+# Direct requests
+terzi https://api.example.com/users              # GET request
+terzi -m POST https://api.example.com/users      # POST request
+terzi -H "Authorization: Bearer token" https://api.example.com/protected
 
-# Request options
--H, --header <HEADER>     Add custom header (key:value)
--j, --json <JSON>         Send JSON data
--f, --form <FORM>         Send form data (key=value)
--A, --auth <AUTH>         Authentication (bearer:token, basic:user:pass)
--b, --body <BODY>         Raw request body
--t, --timeout <SECONDS>   Request timeout (default: 30)
--L, --follow-redirects    Follow HTTP redirects
+# Request building
+terzi --method POST \
+      --header "Content-Type: application/json" \
+      --json '{"name": "John", "email": "john@example.com"}' \
+      https://api.example.com/users
 
-# Output options
--o, --output <FORMAT>     Output format (auto, json, yaml, table, raw)
--i, --include-headers     Include response headers
--p, --pretty              Pretty print JSON (default: true)
--S, --silent              Silent mode (no formatting)
--v, --verbose             Verbose output with timing info
+# Form data
+terzi --form name=John --form email=john@example.com https://api.example.com/users
 
-# Workflow options
---save <NAME>             Save request with a name
---load <NAME>             Load and execute saved request
+# Authentication
+terzi --auth "bearer:your-token" https://api.example.com/protected
+terzi --auth "basic:user:pass" https://api.example.com/protected
+terzi --auth "apikey:X-API-Key:your-key" https://api.example.com/protected
 ```
 
-### Interactive Mode
+### **All CLI Options**
 
-Start the interactive mode for a guided experience:
+```bash
+# HTTP Methods
+terzi -m GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS <url>
+
+# Headers
+terzi -H "Content-Type: application/json" -H "User-Agent: MyApp" <url>
+
+# Request Body
+terzi -b "raw body content" <url>                    # Raw body
+terzi -j '{"key": "value"}' <url>                    # JSON body
+terzi -f key=value -f name=John <url>                # Form data
+
+# Authentication
+terzi -A "bearer:token" <url>                        # Bearer token
+terzi -A "basic:user:pass" <url>                     # Basic auth
+terzi -A "apikey:X-API-Key:key" <url>               # API key
+
+# Request Options
+terzi -t 60 <url>                                    # Timeout (seconds)
+terzi -L <url>                                       # Follow redirects
+terzi -v <url>                                       # Verbose output
+terzi -S <url>                                       # Silent mode
+
+# Output Options
+terzi -o json <url>                                  # Force JSON output
+terzi -o yaml <url>                                  # YAML output
+terzi -o table <url>                                 # Table format
+terzi -o auto <url>                                  # Auto-detect (default)
+terzi -i <url>                                       # Include headers
+terzi -p <url>                                       # Pretty print
+
+# Save/Load
+terzi --save "name" <url>                           # Save request
+terzi --load "name"                                 # Load request
+```
+
+### **Request Management**
+
+```bash
+# List and manage saved requests
+terzi list                                          # List all requests
+terzi list --filter "api"                          # Filter by pattern
+terzi show "my-request"                             # Show request details
+terzi edit "my-request"                             # Edit saved request
+terzi delete "my-request"                           # Delete request
+
+# History and analytics
+terzi history                                       # View request history
+terzi history --limit 20                           # Show last 20 requests
+
+# Export/Import
+terzi export --output my-requests.json             # Export all requests
+terzi export --format yaml --output requests.yaml  # Export as YAML
+```
+
+### **Configuration Management**
+
+```bash
+# View configuration
+terzi config list                                   # Show all settings
+terzi config get timeout                           # Get specific setting
+
+# Set configuration
+terzi config set timeout 60                        # Set timeout
+terzi config set output json                       # Set default output
+terzi config set verbose true                      # Enable verbose mode
+terzi config set show_headers true                 # Show headers by default
+terzi config set pretty_print true                 # Pretty print by default
+
+# Reset configuration
+terzi config reset                                  # Reset to defaults
+```
+
+### **Interactive Mode**
+
+Launch the interactive mode for a guided experience:
 
 ```bash
 terzi interactive
 ```
 
-The interactive mode provides:
-- Step-by-step request building
-- Smart defaults and suggestions
-- Real-time validation
-- Request preview before execution
-- Auto-save successful requests
+**Interactive features:**
+- 🎯 **Guided request building** with step-by-step prompts
+- 📋 **Request collection browser** with fuzzy search
+- 🔍 **History explorer** with detailed analytics
+- ✏️ **Request editor** for fine-tuning
+- 💾 **Smart saving** with automatic organization
 
-### Authentication
+---
 
-Terzi supports multiple authentication methods:
+## 🔧 **Configuration**
+
+Terzi can be configured to match your workflow. Configuration files are stored in:
+
+- **Linux/macOS:** `~/.config/terzi/config.toml`
+- **Windows:** `%APPDATA%\terzi\config.toml`
+
+### **General Settings**
+
+```bash
+# Request defaults
+terzi config set default_timeout 30                # Default timeout in seconds
+terzi config set follow_redirects true             # Follow redirects by default
+terzi config set max_redirects 5                   # Maximum redirects to follow
+terzi config set verify_ssl true                   # Verify SSL certificates
+
+# Output settings
+terzi config set default_format "auto"             # Default output format
+terzi config set pretty_print true                 # Pretty print responses
+terzi config set show_headers false                # Show headers in output
+terzi config set color_output true                 # Enable colored output
+```
+
+### **Network Settings**
+
+```bash
+# Proxy configuration
+terzi config set proxy_url "http://proxy:8080"     # Set HTTP proxy
+terzi config set proxy_auth "user:pass"            # Proxy authentication
+
+# Connection settings
+terzi config set user_agent "Terzi/1.0"           # Custom user agent
+terzi config set keep_alive true                   # Enable keep-alive
+terzi config set connection_timeout 10             # Connection timeout
+terzi config set read_timeout 30                   # Read timeout
+```
+
+### **Security Settings**
+
+```bash
+# Data masking
+terzi config set mask_sensitive_data true          # Mask sensitive data
+terzi config set mask_auth_headers true            # Mask auth headers
+terzi config set mask_tokens true                  # Mask tokens in output
+```
+
+---
+
+## 🎨 **Beautiful Output**
+
+Terzi produces clean, readable output with:
+
+- **Color-coded status indicators** (🟢 success, 🔴 error, 🟡 warning)
+- **Syntax highlighting** for JSON, XML, and HTML responses
+- **Professional formatting** with clean typography
+- **Smart content detection** with automatic formatting
+- **Responsive design** that adapts to terminal width
+- **Sensitive data masking** for security
+
+### **Example Output**
+
+```
+🟢 GET https://api.github.com/users/octocat 200 (342ms) 1.2KB
+┌─────────────────────────────────────────────────────────────────┐
+│ Request Details                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│ Method: GET                                                     │
+│ URL:    https://api.github.com/users/octocat                    │
+│ Status: 200 OK                                                  │
+│ Time:   342ms                                                   │
+│ Size:   1.2KB                                                   │
+└─────────────────────────────────────────────────────────────────┘
+
+{
+  "login": "octocat",
+  "id": 1,
+  "name": "The Octocat",
+  "company": "GitHub",
+  "public_repos": 8,
+  "followers": 9001,
+  "created_at": "2011-01-25T18:44:36Z"
+}
+```
+
+---
+
+## 🔐 **Security Features**
+
+### **Sensitive Data Masking**
+
+Terzi automatically masks sensitive data in output and history:
+
+```bash
+# Headers with sensitive data are masked
+Authorization: Bearer to****xe
+X-API-Key: ab****89
+Cookie: session=ab****cd
+
+# JSON responses with sensitive fields are masked
+{
+  "token": "ey****JV",
+  "api_key": "sk****23",
+  "password": "**masked**"
+}
+```
+
+### **Authentication Methods**
 
 ```bash
 # Bearer Token
-terzi get https://api.example.com/protected -A "bearer:your_token"
+terzi -A "bearer:your-token" <url>
 
 # Basic Authentication
-terzi get https://api.example.com/protected -A "basic:username:password"
+terzi -A "basic:username:password" <url>
 
-# API Key in Header
-terzi get https://api.example.com/protected -A "api-key:X-API-Key:your_key"
+# API Key (Header)
+terzi -A "apikey:X-API-Key:your-key" <url>
 
-# Custom Header
-terzi get https://api.example.com/protected -H "Authorization: Custom your_token"
+# API Key (Custom Header)
+terzi -A "apikey:Authorization:Bearer your-token" <url>
 ```
 
-### Request Management
+---
+
+## 📊 **Request History & Analytics**
+
+Terzi tracks all your requests and provides detailed analytics:
 
 ```bash
-# List all saved requests
-terzi list
-
-# Search requests
-terzi list --filter "user"
-
-# Show request details
-terzi show my-request
-
-# Edit saved request
-terzi edit my-request
-
-# Delete request
-terzi delete my-request
-
 # View request history
-terzi history --limit 20
+terzi history                          # Show recent requests
+terzi history --limit 50               # Show last 50 requests
+
+# History includes:
+# - Request method and URL
+# - Response status and duration
+# - Timestamp and request size
+# - Success/error indicators
 ```
 
-### Collections and Environments
+### **History Output Example**
+
+```
+┌─────────┬────────┬─────────────────────────────────────┬────────────┬──────────┐
+│ Time    │ Method │ URL                                 │ Status     │ Duration │
+├─────────┼────────┼─────────────────────────────────────┼────────────┼──────────┤
+│ 14:23:45│ GET    │ https://api.github.com/users/oct... │ 🟢 200     │ 342ms    │
+│ 14:22:10│ POST   │ https://api.example.com/users       │ 🟢 201     │ 156ms    │
+│ 14:21:33│ GET    │ https://api.broken.com/endpoint     │ 🔴 404     │ 89ms     │
+└─────────┴────────┴─────────────────────────────────────┴────────────┴──────────┘
+```
+
+---
+
+## 🗂️ **Request Collections**
+
+Organize your API requests into collections:
 
 ```bash
-# Create a collection
-terzi config create-collection "My API Tests"
+# Save requests with meaningful names
+terzi --save "get-user-profile" https://api.example.com/users/me
+terzi --save "create-user" -m POST -j '{"name":"John"}' https://api.example.com/users
 
-# Set environment variables
-terzi config set-env dev base_url https://dev-api.example.com
-terzi config set-env prod base_url https://api.example.com
-
-# Use environment in requests
-terzi get "{{base_url}}/users" --env dev
+# List and manage collections
+terzi list                             # List all saved requests
+terzi list --filter "user"             # Filter by name
+terzi show "get-user-profile"          # Show request details
+terzi edit "get-user-profile"          # Edit request
+terzi delete "get-user-profile"        # Delete request
 ```
 
-### Import/Export
+---
+
+## 🌐 **Environment Management**
+
+Different environments for different stages:
 
 ```bash
-# Import from Postman collection
-terzi import postman-collection.json
+# Development environment
+terzi config set base_url "https://api-dev.example.com"
+terzi config set auth_token "dev-token"
 
-# Export your requests
-terzi export --output my-requests.json --format json
+# Production environment
+terzi config set base_url "https://api.example.com"
+terzi config set auth_token "prod-token"
 
-# Backup all data
-terzi config backup
+# Use environment variables
+export TERZI_AUTH_TOKEN="your-token"
+terzi https://api.example.com/protected
 ```
 
-## 🎯 Configuration
+---
 
-Terzi stores configuration in your system's config directory:
-- Linux: `~/.config/terzi/`
-- macOS: `~/Library/Application Support/terzi/`
-- Windows: `%APPDATA%\terzi\`
+## 📤 **Export & Import**
 
-### Settings
+Share your request collections:
 
 ```bash
-# View all settings
-terzi config list
+# Export requests
+terzi export --output requests.json                # Export as JSON
+terzi export --format yaml --output requests.yaml  # Export as YAML
 
-# Set a configuration value
-terzi config set output.pretty_print true
-terzi config set network.default_timeout 60
-terzi config set ui.theme dark
-
-# Reset to defaults
-terzi config reset
+# Import requests (coming soon)
+terzi import --input requests.json                 # Import from JSON
 ```
 
-### Key Configuration Options
+---
 
-- **`general.default_timeout`**: Default request timeout in seconds
-- **`output.default_format`**: Default output format (auto, json, yaml, table)
-- **`output.syntax_highlighting`**: Enable/disable syntax highlighting
-- **`network.verify_ssl`**: SSL certificate verification
-- **`ui.theme`**: Color theme (dark, light, auto)
+## 🛠️ **Development**
 
-## 🔧 Advanced Usage
-
-### Request Templates
-
-Create dynamic requests with variables:
+### **Building from Source**
 
 ```bash
-# Create a template
-terzi template create user-lookup \
-  --url "https://api.example.com/users/{{user_id}}" \
-  --method GET \
-  --header "Authorization: Bearer {{token}}"
-
-# Use the template
-terzi template run user-lookup --var user_id=123 --var token=abc123
+git clone https://github.com/simplysabir/terzi
+cd terzi
+cargo build --release
 ```
 
-### Request Chaining
-
-Use response data in subsequent requests:
+### **Running Tests**
 
 ```bash
-# Save response data
-terzi post https://api.example.com/auth -j '{"user":"test"}' --save-response auth_response
-
-# Use in next request
-terzi get https://api.example.com/profile -H "Authorization: Bearer {{auth_response.token}}"
+cargo test                             # Run all tests
+cargo test --lib                       # Run library tests
+cargo test --bins                      # Run binary tests
 ```
 
-### Response Processing
+### **Development Mode**
 
 ```bash
-# Filter JSON responses
-terzi get https://api.example.com/users --filter ".users[0].name"
-
-# Compare responses
-terzi diff request1 request2
-
-# Save response to file
-terzi get https://api.example.com/data --output-file data.json
+cargo run -- --help                   # Run with cargo
+cargo run -- https://api.example.com  # Test API request
 ```
 
-## 🤝 Contributing
+---
+
+## 📖 **Documentation**
+
+Comprehensive documentation is available:
+
+- **[Examples](examples/)** - Real-world usage examples
+- **[API Reference](docs/api.md)** - Complete API documentation
+- **[Configuration Guide](docs/configuration.md)** - Configuration options
+- **[Advanced Usage](docs/advanced.md)** - Advanced features
+- **[Troubleshooting](docs/troubleshooting.md)** - Common issues
+
+---
+
+## 🤝 **Contributing**
 
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
-### Development Setup
+### **Development Setup**
 
 ```bash
 git clone https://github.com/simplysabir/terzi
 cd terzi
 cargo build
 cargo test
-cargo run -- --help
 ```
 
-### Running Tests
+### **Code Style**
 
 ```bash
-# Run all tests
-cargo test
-
-# Run with output
-cargo test -- --nocapture
-
-# Run specific test
-cargo test test_request_builder
+cargo fmt                              # Format code
+cargo clippy                           # Lint code
+cargo check                            # Check compilation
 ```
 
-## 📝 License
+---
 
-This project is licensed under either of
+## 📄 **License**
 
-- Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
-- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-at your option.
+---
 
-<!-- ## 🚀 Roadmap
+## 📞 **Support**
 
-- [ ] **Plugin System**: Custom request processors and formatters
-- [ ] **GraphQL Support**: Native GraphQL query support
-- [ ] **WebSocket Testing**: Real-time connection testing
-- [ ] **Performance Testing**: Load testing capabilities
-- [ ] **API Documentation**: Generate docs from requests
-- [ ] **Team Collaboration**: Shared collections and environments
-- [ ] **Mock Server**: Built-in API mocking
-- [ ] **Test Assertions**: Built-in testing framework -->
-
-## 🎉 Acknowledgments
-
-Inspired by excellent tools like:
-- [HTTPie](https://httpie.io/) - Beautiful HTTP CLI
-- [Postman](https://postman.com/) - Comprehensive API platform
-- [Insomnia](https://insomnia.rest/) - Elegant REST client
-- [curl](https://curl.se/) - The universal data transfer tool
+- 🐛 **Issues:** [GitHub Issues](https://github.com/simplysabir/terzi/issues)
+- 💬 **Discussions:** [GitHub Discussions](https://github.com/simplysabir/terzi/discussions)
+- 📧 **Email:** simplysabir@gmail.com
 
 ---
 
 <div align="center">
 
-**[Website](https://terzi.xyz)** • **[Documentation](https://docs.terzi.xyz)** • **[Examples](https://github.com/simplysabir/terzi/tree/main/examples)**
+**A modern CLI API client built for developer productivity.**
 
-Made with ❤️ by Sabir Khan
+🚀 **Fast & Reliable** • 🛠️ **Developer-Friendly** • ✨ **Open Source**
+
+Made with ❤️ in Rust
 
 </div>
+
+## Docker Usage
+
+Terzi can be run in a Docker container for easy installation and usage without requiring Rust to be installed locally.
+
+### Quick Start with Docker
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/simplysabir/terzi.git
+   cd terzi
+   ```
+
+2. **Build and run with Docker Compose:**
+   ```bash
+   docker compose up --build
+   ```
+
+3. **Use Terzi interactively:**
+   ```bash
+   # For interactive mode
+   docker compose run terzi-api-client interactive
+   
+   # For direct API calls
+   docker compose run terzi-api-client https://api.example.com/users
+   
+   # With custom options
+   docker compose run terzi-api-client -X POST -j '{"name":"John"}' https://api.example.com/users
+   ```
+
+### Alternative Docker Commands
+
+You can also use Docker directly:
+
+```bash
+# Build the image
+docker build -t terzi .
+
+# Run Terzi
+docker run -it terzi https://api.example.com/users
+
+# Run in interactive mode
+docker run -it terzi interactive
+```
+
+### Benefits of Using Docker
+
+- **No Rust installation required** - Everything runs in the container
+- **Consistent environment** - Same behavior across different systems
+- **Easy deployment** - Share the Docker image with your team
+- **Isolated execution** - No conflicts with local system dependencies
+
+### Data Persistence
+
+To persist configuration and saved requests across container restarts, mount a volume:
+
+```bash
+# Using Docker Compose (recommended)
+docker compose run -v $(pwd)/data:/root/.config/terzi terzi-api-client
+
+# Using Docker directly
+docker run -it -v $(pwd)/data:/root/.config/terzi terzi
+```

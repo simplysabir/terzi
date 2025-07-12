@@ -127,15 +127,14 @@ impl Default for Config {
 impl Config {
     pub async fn load() -> Result<Self> {
         let config_path = Self::get_config_path()?;
-        
+
         if config_path.exists() {
             let mut file = fs::File::open(&config_path).await?;
             let mut contents = String::new();
             file.read_to_string(&mut contents).await?;
-            
-            let config: Config = toml::from_str(&contents)
-                .unwrap_or_else(|_| Config::default());
-            
+
+            let config: Config = toml::from_str(&contents).unwrap_or_else(|_| Config::default());
+
             Ok(config)
         } else {
             let config = Config::default();
@@ -146,20 +145,20 @@ impl Config {
 
     pub async fn save(&self) -> Result<()> {
         let config_path = Self::get_config_path()?;
-        
+
         // Create config directory if it doesn't exist
         if let Some(parent) = config_path.parent() {
             if !parent.exists() {
                 fs::create_dir_all(parent).await?;
             }
         }
-        
+
         let contents = toml::to_string_pretty(self)?;
-        
+
         let mut file = fs::File::create(&config_path).await?;
         file.write_all(contents.as_bytes()).await?;
         file.flush().await?;
-        
+
         Ok(())
     }
 
@@ -181,7 +180,7 @@ impl Config {
             "general.max_history_entries" => Some(self.general.max_history_entries.to_string()),
             "general.auto_save_requests" => Some(self.general.auto_save_requests.to_string()),
             "general.check_updates" => Some(self.general.check_updates.to_string()),
-            
+
             "output.default_format" => Some(self.output.default_format.clone()),
             "output.pretty_print" => Some(self.output.pretty_print.to_string()),
             "output.show_headers" => Some(self.output.show_headers.to_string()),
@@ -190,7 +189,7 @@ impl Config {
             "output.syntax_highlighting" => Some(self.output.syntax_highlighting.to_string()),
             "output.color_scheme" => Some(self.output.color_scheme.clone()),
             "output.max_body_length" => self.output.max_body_length.map(|v| v.to_string()),
-            
+
             "network.user_agent" => Some(self.network.user_agent.clone()),
             "network.proxy_url" => self.network.proxy_url.clone(),
             "network.verify_ssl" => Some(self.network.verify_ssl.to_string()),
@@ -199,15 +198,17 @@ impl Config {
             "network.max_redirects" => Some(self.network.max_redirects.to_string()),
             "network.keep_alive" => Some(self.network.keep_alive.to_string()),
             "network.compression" => Some(self.network.compression.to_string()),
-            
+
             "ui.theme" => Some(self.ui.theme.clone()),
             "ui.editor" => Some(self.ui.editor.clone()),
-            "ui.confirm_dangerous_operations" => Some(self.ui.confirm_dangerous_operations.to_string()),
+            "ui.confirm_dangerous_operations" => {
+                Some(self.ui.confirm_dangerous_operations.to_string())
+            }
             "ui.show_welcome_message" => Some(self.ui.show_welcome_message.to_string()),
             "ui.auto_complete" => Some(self.ui.auto_complete.to_string()),
             "ui.fuzzy_search" => Some(self.ui.fuzzy_search.to_string()),
             "ui.table_style" => Some(self.ui.table_style.clone()),
-            
+
             _ => None,
         }
     }
@@ -215,63 +216,95 @@ impl Config {
     pub async fn set_value(&mut self, key: &str, value: &str) -> Result<()> {
         match key {
             "general.default_timeout" => {
-                self.general.default_timeout = value.parse().map_err(|_| anyhow::anyhow!("Invalid timeout value"))?;
+                self.general.default_timeout = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid timeout value"))?;
             }
             "general.follow_redirects" => {
-                self.general.follow_redirects = value.parse().map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
+                self.general.follow_redirects = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
             }
             "general.save_history" => {
-                self.general.save_history = value.parse().map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
+                self.general.save_history = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
             }
             "general.max_history_entries" => {
-                self.general.max_history_entries = value.parse().map_err(|_| anyhow::anyhow!("Invalid number value"))?;
+                self.general.max_history_entries = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid number value"))?;
             }
             "general.auto_save_requests" => {
-                self.general.auto_save_requests = value.parse().map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
+                self.general.auto_save_requests = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
             }
             "general.check_updates" => {
-                self.general.check_updates = value.parse().map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
+                self.general.check_updates = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
             }
-            
+
             "output.default_format" => {
                 let valid_formats = ["auto", "json", "yaml", "table", "raw"];
                 if valid_formats.contains(&value) {
                     self.output.default_format = value.to_string();
                 } else {
-                    return Err(anyhow::anyhow!("Invalid format. Valid options: {}", valid_formats.join(", ")));
+                    return Err(anyhow::anyhow!(
+                        "Invalid format. Valid options: {}",
+                        valid_formats.join(", ")
+                    ));
                 }
             }
             "output.pretty_print" => {
-                self.output.pretty_print = value.parse().map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
+                self.output.pretty_print = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
             }
             "output.show_headers" => {
-                self.output.show_headers = value.parse().map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
+                self.output.show_headers = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
             }
             "output.show_timing" => {
-                self.output.show_timing = value.parse().map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
+                self.output.show_timing = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
             }
             "output.show_size" => {
-                self.output.show_size = value.parse().map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
+                self.output.show_size = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
             }
             "output.syntax_highlighting" => {
-                self.output.syntax_highlighting = value.parse().map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
+                self.output.syntax_highlighting = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
             }
             "output.color_scheme" => {
                 let valid_schemes = ["dark", "light", "auto"];
                 if valid_schemes.contains(&value) {
                     self.output.color_scheme = value.to_string();
                 } else {
-                    return Err(anyhow::anyhow!("Invalid color scheme. Valid options: {}", valid_schemes.join(", ")));
+                    return Err(anyhow::anyhow!(
+                        "Invalid color scheme. Valid options: {}",
+                        valid_schemes.join(", ")
+                    ));
                 }
             }
             "output.max_body_length" => {
                 if value == "none" || value.is_empty() {
                     self.output.max_body_length = None;
                 } else {
-                    self.output.max_body_length = Some(value.parse().map_err(|_| anyhow::anyhow!("Invalid number value"))?);
+                    self.output.max_body_length = Some(
+                        value
+                            .parse()
+                            .map_err(|_| anyhow::anyhow!("Invalid number value"))?,
+                    );
                 }
             }
-            
+
             "network.user_agent" => {
                 self.network.user_agent = value.to_string();
             }
@@ -285,59 +318,85 @@ impl Config {
                 }
             }
             "network.verify_ssl" => {
-                self.network.verify_ssl = value.parse().map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
+                self.network.verify_ssl = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
             }
             "network.connection_timeout" => {
-                self.network.connection_timeout = value.parse().map_err(|_| anyhow::anyhow!("Invalid timeout value"))?;
+                self.network.connection_timeout = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid timeout value"))?;
             }
             "network.read_timeout" => {
-                self.network.read_timeout = value.parse().map_err(|_| anyhow::anyhow!("Invalid timeout value"))?;
+                self.network.read_timeout = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid timeout value"))?;
             }
             "network.max_redirects" => {
-                self.network.max_redirects = value.parse().map_err(|_| anyhow::anyhow!("Invalid number value"))?;
+                self.network.max_redirects = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid number value"))?;
             }
             "network.keep_alive" => {
-                self.network.keep_alive = value.parse().map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
+                self.network.keep_alive = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
             }
             "network.compression" => {
-                self.network.compression = value.parse().map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
+                self.network.compression = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
             }
-            
+
             "ui.theme" => {
                 let valid_themes = ["default", "dark", "light", "minimal"];
                 if valid_themes.contains(&value) {
                     self.ui.theme = value.to_string();
                 } else {
-                    return Err(anyhow::anyhow!("Invalid theme. Valid options: {}", valid_themes.join(", ")));
+                    return Err(anyhow::anyhow!(
+                        "Invalid theme. Valid options: {}",
+                        valid_themes.join(", ")
+                    ));
                 }
             }
             "ui.editor" => {
                 self.ui.editor = value.to_string();
             }
             "ui.confirm_dangerous_operations" => {
-                self.ui.confirm_dangerous_operations = value.parse().map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
+                self.ui.confirm_dangerous_operations = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
             }
             "ui.show_welcome_message" => {
-                self.ui.show_welcome_message = value.parse().map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
+                self.ui.show_welcome_message = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
             }
             "ui.auto_complete" => {
-                self.ui.auto_complete = value.parse().map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
+                self.ui.auto_complete = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
             }
             "ui.fuzzy_search" => {
-                self.ui.fuzzy_search = value.parse().map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
+                self.ui.fuzzy_search = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid boolean value"))?;
             }
             "ui.table_style" => {
                 let valid_styles = ["ascii", "rounded", "modern", "minimal"];
                 if valid_styles.contains(&value) {
                     self.ui.table_style = value.to_string();
                 } else {
-                    return Err(anyhow::anyhow!("Invalid table style. Valid options: {}", valid_styles.join(", ")));
+                    return Err(anyhow::anyhow!(
+                        "Invalid table style. Valid options: {}",
+                        valid_styles.join(", ")
+                    ));
                 }
             }
-            
+
             _ => return Err(anyhow::anyhow!("Unknown configuration key: {}", key)),
         }
-        
+
         self.save().await?;
         Ok(())
     }
@@ -351,7 +410,7 @@ impl Config {
     pub fn list_all_keys() -> Vec<&'static str> {
         vec![
             "general.default_timeout",
-            "general.follow_redirects", 
+            "general.follow_redirects",
             "general.save_history",
             "general.max_history_entries",
             "general.auto_save_requests",
@@ -409,15 +468,21 @@ impl Config {
     pub fn validate(&self) -> Result<()> {
         // Validate timeouts
         if self.general.default_timeout == 0 || self.general.default_timeout > 3600 {
-            return Err(anyhow::anyhow!("Default timeout must be between 1 and 3600 seconds"));
+            return Err(anyhow::anyhow!(
+                "Default timeout must be between 1 and 3600 seconds"
+            ));
         }
 
         if self.network.connection_timeout == 0 || self.network.connection_timeout > 300 {
-            return Err(anyhow::anyhow!("Connection timeout must be between 1 and 300 seconds"));
+            return Err(anyhow::anyhow!(
+                "Connection timeout must be between 1 and 300 seconds"
+            ));
         }
 
         if self.network.read_timeout == 0 || self.network.read_timeout > 3600 {
-            return Err(anyhow::anyhow!("Read timeout must be between 1 and 3600 seconds"));
+            return Err(anyhow::anyhow!(
+                "Read timeout must be between 1 and 3600 seconds"
+            ));
         }
 
         // Validate max redirects
@@ -427,7 +492,9 @@ impl Config {
 
         // Validate history entries
         if self.general.max_history_entries == 0 || self.general.max_history_entries > 10000 {
-            return Err(anyhow::anyhow!("Max history entries must be between 1 and 10000"));
+            return Err(anyhow::anyhow!(
+                "Max history entries must be between 1 and 10000"
+            ));
         }
 
         // Validate proxy URL if set

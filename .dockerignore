@@ -1,0 +1,38 @@
+# Ignore the target directory to ensure a clean build inside the container.
+target/
+
+# Ignore Git history and configuration.
+.git/
+.gitignore
+
+# Ignore Docker-related files.
+Dockerfile
+docker-compose.yml
+.dockerignore
+test-docker.sh
+
+# Ignore IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore temporary files
+*.tmp
+*.temp
+
+# Ignore documentation artifacts
+docs/
+examples/
+*.md
+!README.md
+
+# Ignore test coverage reports
+coverage/
+*.gcov
+*.lcov 
