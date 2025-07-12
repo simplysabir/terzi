@@ -451,21 +451,22 @@ impl InteractiveMode {
         }
 
         // Display requests in a nice table format
-        use comfy_table::*;
-        let mut table = Table::new();
-        table.set_header(vec!["#", "Name", "Method", "URL", "Created"]);
-        table.load_preset(presets::UTF8_FULL_CONDENSED);
+        let headers = vec!["#", "Name", "Method", "URL", "Created"];
+        let rows: Vec<Vec<String>> = requests
+            .iter()
+            .enumerate()
+            .map(|(i, req)| {
+                vec![
+                    (i + 1).to_string(),
+                    req.name.clone(),
+                    req.method.clone(),
+                    req.url.clone(),
+                    req.created_at.format("%Y-%m-%d %H:%M").to_string(),
+                ]
+            })
+            .collect();
 
-        for (i, req) in requests.iter().enumerate() {
-            table.add_row(vec![
-                (i + 1).to_string(),
-                req.name.clone(),
-                req.method.clone(),
-                req.url.clone(),
-                req.created_at.format("%Y-%m-%d %H:%M").to_string(),
-            ]);
-        }
-
+        let table = crate::utils::create_url_priority_table(headers, rows, 3); // URL is column index 3
         println!("{}", table);
 
         // Allow user to select and view details
@@ -613,36 +614,37 @@ impl InteractiveMode {
         }
 
         // Display history
-        use comfy_table::*;
-        let mut table = Table::new();
-        table.set_header(vec!["#", "Time", "Method", "URL", "Status"]);
-        table.load_preset(presets::UTF8_FULL_CONDENSED);
+        let headers = vec!["#", "Time", "Method", "URL", "Status"];
+        let rows: Vec<Vec<String>> = history
+            .iter()
+            .enumerate()
+            .map(|(i, entry)| {
+                let status_display = match entry.response_status {
+                    Some(status) => format!(
+                        "{} {}",
+                        if status >= 200 && status < 300 {
+                            "🟢"
+                        } else if status >= 400 {
+                            "🔴"
+                        } else {
+                            "🟡"
+                        },
+                        status
+                    ),
+                    None => "❌ Error".to_string(),
+                };
 
-        for (i, entry) in history.iter().enumerate() {
-            let status_display = match entry.response_status {
-                Some(status) => format!(
-                    "{} {}",
-                    if status >= 200 && status < 300 {
-                        "🟢"
-                    } else if status >= 400 {
-                        "🔴"
-                    } else {
-                        "🟡"
-                    },
-                    status
-                ),
-                None => "❌ Error".to_string(),
-            };
+                vec![
+                    (i + 1).to_string(),
+                    entry.timestamp.format("%H:%M:%S").to_string(),
+                    entry.method.clone(),
+                    entry.url.clone(),
+                    status_display,
+                ]
+            })
+            .collect();
 
-            table.add_row(vec![
-                (i + 1).to_string(),
-                entry.timestamp.format("%H:%M:%S").to_string(),
-                entry.method.clone(),
-                entry.url.clone(),
-                status_display,
-            ]);
-        }
-
+        let table = crate::utils::create_url_priority_table(headers, rows, 3); // URL is column index 3
         println!("{}", table);
 
         Ok(())

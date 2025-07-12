@@ -501,6 +501,149 @@ pub fn validate_method(method: &str) -> Result<()> {
     Ok(())
 }
 
+// Table utilities for responsive display
+pub fn create_responsive_table(
+    headers: Vec<&str>,
+    rows: Vec<Vec<String>>,
+    column_priorities: Option<Vec<usize>>,
+) -> comfy_table::Table {
+    use comfy_table::*;
+
+    let mut table = Table::new();
+    table.load_preset(presets::UTF8_FULL_CONDENSED);
+
+    // Get terminal width and account for table borders and padding
+    let terminal_width = get_terminal_width();
+    let table_overhead = 3; // Left border + right border + padding
+    let column_separator = 3; // Space between columns
+    let available_width = terminal_width.saturating_sub(table_overhead);
+
+    // Calculate column widths
+    let column_widths =
+        calculate_column_widths(&headers, &rows, available_width, column_priorities);
+
+    // Set headers
+    table.set_header(headers);
+
+    // Note: Column widths are controlled by truncating content
+    // The table will auto-size based on the truncated content
+
+    // Add rows with truncated content
+    for row in rows {
+        let truncated_row: Vec<String> = row
+            .iter()
+            .enumerate()
+            .map(|(i, cell)| {
+                let width = column_widths.get(i).copied().unwrap_or(20);
+                truncate_string(cell, width)
+            })
+            .collect();
+        table.add_row(truncated_row);
+    }
+
+    table
+}
+
+fn calculate_column_widths(
+    headers: &[&str],
+    rows: &[Vec<String>],
+    available_width: usize,
+    column_priorities: Option<Vec<usize>>,
+) -> Vec<usize> {
+    let num_columns = headers.len();
+
+    if num_columns == 0 {
+        return vec![];
+    }
+
+    // Calculate minimum required width for each column (header + some content)
+    let mut min_widths = vec![0; num_columns];
+    let mut max_widths = vec![0; num_columns];
+
+    // Consider header widths
+    for (i, header) in headers.iter().enumerate() {
+        min_widths[i] = header.len().min(8); // Minimum 8 chars for headers
+        max_widths[i] = header.len().max(15); // Start with header width
+    }
+
+    // Consider content widths
+    for row in rows {
+        for (i, cell) in row.iter().enumerate() {
+            if i < num_columns {
+                let cell_len = cell.len();
+                min_widths[i] = min_widths[i].max(cell_len.min(8)); // Min 8 chars
+                max_widths[i] = max_widths[i].max(cell_len.min(40)); // Max 40 chars initially
+            }
+        }
+    }
+
+    // Total separator space needed
+    let separator_space = (num_columns - 1) * 3; // 3 chars between columns
+    let content_width = available_width.saturating_sub(separator_space);
+
+    // If minimum widths exceed available space, scale down proportionally
+    let total_min_width: usize = min_widths.iter().sum();
+    if total_min_width > content_width {
+        let scale_factor = content_width as f64 / total_min_width as f64;
+        for width in min_widths.iter_mut() {
+            *width = (*width as f64 * scale_factor).max(5.0) as usize;
+        }
+        return min_widths;
+    }
+
+    // Distribute remaining space intelligently
+    let remaining_space = content_width.saturating_sub(total_min_width);
+    let mut final_widths = min_widths.clone();
+
+    // Use priorities if provided, otherwise use smart defaults
+    let priorities = column_priorities.unwrap_or_else(|| {
+        // Default priorities: URL columns get more space
+        (0..num_columns)
+            .map(|i| {
+                let header = headers[i].to_lowercase();
+                if header.contains("url") {
+                    3 // High priority for URLs
+                } else if header.contains("name") || header.contains("method") {
+                    2 // Medium priority
+                } else {
+                    1 // Low priority
+                }
+            })
+            .collect()
+    });
+
+    // Distribute remaining space based on priorities
+    let total_priority: usize = priorities.iter().sum();
+    if total_priority > 0 {
+        for (i, &priority) in priorities.iter().enumerate() {
+            let additional_space = (remaining_space * priority) / total_priority;
+            let max_additional = max_widths[i].saturating_sub(min_widths[i]);
+            final_widths[i] += additional_space.min(max_additional);
+        }
+    }
+
+    final_widths
+}
+
+pub fn create_simple_responsive_table(
+    headers: Vec<&str>,
+    rows: Vec<Vec<String>>,
+) -> comfy_table::Table {
+    create_responsive_table(headers, rows, None)
+}
+
+pub fn create_url_priority_table(
+    headers: Vec<&str>,
+    rows: Vec<Vec<String>>,
+    url_column_index: usize,
+) -> comfy_table::Table {
+    let mut priorities = vec![1; headers.len()];
+    if url_column_index < headers.len() {
+        priorities[url_column_index] = 4; // Higher priority for URL column
+    }
+    create_responsive_table(headers, rows, Some(priorities))
+}
+
 // Testing utilities
 #[cfg(test)]
 pub mod test_utils {

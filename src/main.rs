@@ -512,31 +512,20 @@ fn print_request_list(requests: &[request::SavedRequest]) {
         return;
     }
 
-    use comfy_table::*;
-    let mut table = Table::new();
-    table
-        .set_header(vec!["Name", "Method", "URL", "Created"])
-        .load_preset(presets::UTF8_FULL_CONDENSED);
+    let headers = vec!["Name", "Method", "URL", "Created"];
+    let rows: Vec<Vec<String>> = requests
+        .iter()
+        .map(|req| {
+            vec![
+                req.name.clone(),
+                req.method.clone(),
+                req.url.clone(),
+                req.created_at.format("%Y-%m-%d %H:%M").to_string(),
+            ]
+        })
+        .collect();
 
-    // Calculate responsive URL width based on terminal size
-    let terminal_width = utils::get_terminal_width();
-    let fixed_columns_width = 45; // Space for Name, Method, Created + padding
-    let url_max_width = if terminal_width > fixed_columns_width + 10 {
-        terminal_width - fixed_columns_width
-    } else {
-        30 // Minimum URL width
-    };
-
-    for req in requests {
-        let truncated_url = utils::truncate_string(&req.url, url_max_width);
-        table.add_row(vec![
-            &req.name,
-            &req.method,
-            &truncated_url,
-            &req.created_at.format("%Y-%m-%d %H:%M").to_string(),
-        ]);
-    }
-
+    let table = utils::create_url_priority_table(headers, rows, 2); // URL is column index 2
     println!("{}", table);
 }
 
@@ -601,47 +590,35 @@ fn print_history(history: &[storage::HistoryEntry]) {
         return;
     }
 
-    use comfy_table::*;
-    let mut table = Table::new();
-    table
-        .set_header(vec!["Time", "Method", "URL", "Status", "Duration"])
-        .load_preset(presets::UTF8_FULL_CONDENSED);
+    let headers = vec!["Time", "Method", "URL", "Status", "Duration"];
+    let rows: Vec<Vec<String>> = history
+        .iter()
+        .map(|entry| {
+            let status_display = match entry.response_status {
+                Some(status) => {
+                    let color = if status >= 200 && status < 300 {
+                        "🟢"
+                    } else if status >= 400 {
+                        "🔴"
+                    } else {
+                        "🟡"
+                    };
+                    format!("{} {}", color, status)
+                }
+                None => "❌ Error".to_string(),
+            };
 
-    // Calculate responsive URL width based on terminal size
-    let terminal_width = utils::get_terminal_width();
-    let fixed_columns_width = 35; // Space for Time, Method, Status, Duration + padding
-    let url_max_width = if terminal_width > fixed_columns_width + 10 {
-        terminal_width - fixed_columns_width
-    } else {
-        25 // Minimum URL width
-    };
+            vec![
+                entry.timestamp.format("%H:%M:%S").to_string(),
+                entry.method.clone(),
+                entry.url.clone(),
+                status_display,
+                format!("{}ms", entry.duration_ms.unwrap_or(0)),
+            ]
+        })
+        .collect();
 
-    for entry in history {
-        let status_display = match entry.response_status {
-            Some(status) => {
-                let color = if status >= 200 && status < 300 {
-                    "🟢"
-                } else if status >= 400 {
-                    "🔴"
-                } else {
-                    "🟡"
-                };
-                format!("{} {}", color, status)
-            }
-            None => "❌ Error".to_string(),
-        };
-
-        let truncated_url = utils::truncate_string(&entry.url, url_max_width);
-
-        table.add_row(vec![
-            &entry.timestamp.format("%H:%M:%S").to_string(),
-            &entry.method,
-            &truncated_url,
-            &status_display,
-            &format!("{}ms", entry.duration_ms.unwrap_or(0)),
-        ]);
-    }
-
+    let table = utils::create_url_priority_table(headers, rows, 2); // URL is column index 2
     println!("{}", table);
 }
 

@@ -1,7 +1,5 @@
 use anyhow::Result;
 use colored::*;
-use comfy_table::presets::UTF8_FULL_CONDENSED;
-use comfy_table::*;
 use serde_json::Value;
 use std::collections::HashMap;
 use syntect::easy::HighlightLines;
@@ -78,14 +76,14 @@ impl ResponseFormatter {
     fn print_headers(&self, headers: &HashMap<String, String>) {
         if !headers.is_empty() {
             println!("{}", "Headers:".bright_yellow().bold());
-            let mut table = Table::new();
-            table.load_preset(UTF8_FULL_CONDENSED);
-            table.set_header(vec!["Name", "Value"]);
 
-            for (key, value) in headers {
-                table.add_row(vec![key.bright_blue().to_string(), value.to_string()]);
-            }
+            let headers_vec = vec!["Name", "Value"];
+            let rows: Vec<Vec<String>> = headers
+                .iter()
+                .map(|(key, value)| vec![key.bright_blue().to_string(), value.to_string()])
+                .collect();
 
+            let table = crate::utils::create_simple_responsive_table(headers_vec, rows);
             println!("{}", table);
             println!();
         }
@@ -216,29 +214,33 @@ impl ResponseFormatter {
                     return;
                 }
 
-                let mut table = Table::new();
-                table.load_preset(UTF8_FULL_CONDENSED);
-
                 // Get headers from first object
                 if let Some(Value::Object(first_obj)) = arr.first() {
                     let headers: Vec<String> = first_obj.keys().cloned().collect();
-                    table.set_header(headers.clone());
+                    let headers_ref: Vec<&str> = headers.iter().map(|s| s.as_str()).collect();
 
                     // Add rows
-                    for item in &arr {
-                        if let Value::Object(obj) = item {
-                            let row: Vec<String> = headers
-                                .iter()
-                                .map(|h| {
-                                    obj.get(h)
-                                        .map(|v| self.value_to_string(v))
-                                        .unwrap_or_else(|| "".to_string())
-                                })
-                                .collect();
-                            table.add_row(row);
-                        }
-                    }
+                    let rows: Vec<Vec<String>> = arr
+                        .iter()
+                        .filter_map(|item| {
+                            if let Value::Object(obj) = item {
+                                Some(
+                                    headers
+                                        .iter()
+                                        .map(|h| {
+                                            obj.get(h)
+                                                .map(|v| self.value_to_string(v))
+                                                .unwrap_or_else(|| "".to_string())
+                                        })
+                                        .collect(),
+                                )
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
 
+                    let table = crate::utils::create_simple_responsive_table(headers_ref, rows);
                     println!("{}", table);
                 } else {
                     println!(
@@ -249,17 +251,15 @@ impl ResponseFormatter {
                 }
             }
             Ok(Value::Object(obj)) => {
-                let mut table = Table::new();
-                table.load_preset(UTF8_FULL_CONDENSED);
-                table.set_header(vec!["Key", "Value"]);
+                let headers = vec!["Key", "Value"];
+                let rows: Vec<Vec<String>> = obj
+                    .iter()
+                    .map(|(key, value)| {
+                        vec![key.bright_blue().to_string(), self.value_to_string(value)]
+                    })
+                    .collect();
 
-                for (key, value) in &obj {
-                    table.add_row(vec![
-                        key.bright_blue().to_string(),
-                        self.value_to_string(value),
-                    ]);
-                }
-
+                let table = crate::utils::create_simple_responsive_table(headers, rows);
                 println!("{}", table);
             }
             _ => {
@@ -325,27 +325,24 @@ impl ResponseFormatter {
         println!();
         println!("{}", "Response Info:".bright_yellow().bold());
 
-        let mut info_table = Table::new();
-        info_table.load_preset(UTF8_FULL_CONDENSED);
-
-        info_table.add_row(vec![
-            "Duration".bright_blue().to_string(),
-            response.duration_human(),
-        ]);
-
-        info_table.add_row(vec![
-            "Size".bright_blue().to_string(),
-            response.size_human(),
-        ]);
+        let headers = vec!["Property", "Value"];
+        let mut rows = vec![
+            vec![
+                "Duration".bright_blue().to_string(),
+                response.duration_human(),
+            ],
+            vec!["Size".bright_blue().to_string(), response.size_human()],
+        ];
 
         if let Some(content_type) = response.content_type() {
-            info_table.add_row(vec![
+            rows.push(vec![
                 "Content-Type".bright_blue().to_string(),
                 content_type.clone(),
             ]);
         }
 
-        println!("{}", info_table);
+        let table = crate::utils::create_simple_responsive_table(headers, rows);
+        println!("{}", table);
     }
 
     pub fn display_error(&self, error: &str) {

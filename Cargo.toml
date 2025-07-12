@@ -1,6 +1,6 @@
 [package]
 name = "terzi"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2024"
 description = "Modern CLI API client designed for developer productivity"
 license = "MIT"
