@@ -9,7 +9,7 @@ repository = "https://github.com/simplysabir/terzi"
 homepage = "https://github.com/simplysabir/terzi"
 documentation = "https://github.com/simplysabir/terzi#readme"
 keywords = ["api", "cli", "http", "client", "rest"]
-categories = ["command-line-utilities", "api-client"]
+categories = ["command-line-utilities", "http-client"]
 
 [[bin]]
 name = "terzi"
