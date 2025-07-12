@@ -10,7 +10,6 @@ This directory contains comprehensive examples showing how to use all features o
 - [Configuration](#configuration) - Settings, environments, profiles
 - [Advanced Features](#advanced-features) - Complex scenarios and workflows
 - [Interactive Mode](#interactive-mode) - Guided request building
-- [Real-world APIs](#real-world-apis) - Examples with popular APIs
 
 ## 🚀 Quick Start
 
@@ -34,20 +33,7 @@ export PATH=$PATH:$(pwd)/target/release
 | [`authentication.sh`](authentication.sh) | Various authentication methods |
 | [`request-management.sh`](request-management.sh) | Saving, loading, and managing requests |
 | [`configuration.sh`](configuration.sh) | Configuration management and settings |
-| [`advanced-usage.sh`](advanced-usage.sh) | Advanced features and complex scenarios |
-| [`interactive-examples.md`](interactive-examples.md) | Interactive mode walkthrough |
-| [`real-world-apis.sh`](real-world-apis.sh) | Examples with GitHub, JSONPlaceholder, etc. |
-| [`json-examples.sh`](json-examples.sh) | Working with JSON data |
-| [`form-data-examples.sh`](form-data-examples.sh) | Form data submissions |
-| [`error-handling.sh`](error-handling.sh) | Error handling and troubleshooting |
-
-## 🔧 Configuration Files
-
-| File | Description |
-|------|-------------|
-| [`config-examples/`](config-examples/) | Sample configuration files |
-| [`environments/`](environments/) | Environment-specific configurations |
-| [`collections/`](collections/) | Request collection examples |
+| [`interactive-examples.md`](interactive-examples.md) | Interactive mode walkthrough
 
 ## 🌐 Test Servers
 
@@ -98,6 +84,4 @@ If you encounter issues with examples:
 After trying these examples:
 
 1. Read the [complete documentation](../docs/)
-2. Explore the [advanced features](../docs/advanced.md)
-3. Check out the [configuration guide](../docs/configuration.md)
-4. Join the community discussions 
+2. Check out the [configuration guide](../docs/configuration.md)

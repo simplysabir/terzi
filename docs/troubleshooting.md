@@ -634,7 +634,6 @@ terzi -v https://your-api.com/endpoint
 
 - **GitHub Issues** - [https://github.com/simplysabir/terzi/issues](https://github.com/simplysabir/terzi/issues)
 - **GitHub Discussions** - [https://github.com/simplysabir/terzi/discussions](https://github.com/simplysabir/terzi/discussions)
-- **Email** - simplysabir@gmail.com
 
 ### When Creating Issues
 

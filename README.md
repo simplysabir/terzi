@@ -429,8 +429,6 @@ cargo build --release
 
 ```bash
 cargo test                             # Run all tests
-cargo test --lib                       # Run library tests
-cargo test --bins                      # Run binary tests
 ```
 
 ### **Development Mode**
